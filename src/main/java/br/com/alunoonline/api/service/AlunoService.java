@@ -42,8 +42,8 @@ public class AlunoService {
         Aluno alunoEditado = alunoDoBancoDeDados.get(); //armazeno meu aluno existente
 
         alunoEditado.setNome(aluno.getNome());
-        alunoEditado.setEmail(aluno.getEmail());;
-        alunoEditado.setCpf(aluno.getCpf());;
+        alunoEditado.setEmail(aluno.getEmail());
+        alunoEditado.setCpf(aluno.getCpf());
 
         alunoRepository.save(alunoEditado); //salvo no banco de dados devolvendo meu aluno já editado!
     }
