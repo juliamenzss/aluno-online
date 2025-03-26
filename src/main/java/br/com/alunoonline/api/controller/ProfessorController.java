@@ -21,13 +21,11 @@ public class ProfessorController {
     public void criarProfessor(@RequestBody Professor professor){
         professorService.criarProfessor(professor);
     }
-
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<Professor> listarTodosProfessores(){
         return professorService.listarTodosProfessores();
     }
-
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<Professor> buscarProfessorPorId(@PathVariable Long id) {
@@ -39,7 +37,6 @@ public class ProfessorController {
     public void deletarProfessorPorId(@PathVariable Long id){
         professorService.deletarProfessorPorId(id);
     }
-
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void atualizarProfessorPorId(@PathVariable Long id,@RequestBody Professor professor){
