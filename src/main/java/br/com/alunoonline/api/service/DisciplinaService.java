@@ -12,11 +12,9 @@ public class DisciplinaService {
 
     @Autowired
     DisciplinaRepository disciplinaRepository;
-
     public void criarDisciplina(Disciplina disciplina){
         disciplinaRepository.save(disciplina);
     }
-
     public List<Disciplina> listarDisciplinasDoProf(Long professorId){
         return disciplinaRepository.findByProfessorId(professorId);
     }
