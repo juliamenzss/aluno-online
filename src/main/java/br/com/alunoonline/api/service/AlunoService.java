@@ -39,13 +39,12 @@ public class AlunoService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado no banco de dados");
         }
 
-        Aluno alunoEditado = alunoDoBancoDeDados.get(); //armazeno meu aluno existente
-
+        Aluno alunoEditado = alunoDoBancoDeDados.get();
         alunoEditado.setNome(aluno.getNome());
         alunoEditado.setEmail(aluno.getEmail());
         alunoEditado.setCpf(aluno.getCpf());
 
-        alunoRepository.save(alunoEditado); //salvo no banco de dados devolvendo meu aluno já editado!
+        alunoRepository.save(alunoEditado);
     }
 
 }
