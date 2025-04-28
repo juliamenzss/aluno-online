@@ -9,6 +9,7 @@ import java.io.Serializable;
 
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "disciplina")
 @Data
 @Entity
 public class Disciplina implements Serializable {
@@ -19,7 +20,9 @@ public class Disciplina implements Serializable {
 
     private String nome;
 
-    @ManyToOne //vai ter chave estrangeira professor_id apontando p professor
-    @JoinColumn(name = "professor_id") //muitas disciplinas podem ter o mesmo professor
+    private Integer cargaHoraria;
+
+    @ManyToOne
+    @JoinColumn(name = "professor_id")
     private Professor professor;
 }
