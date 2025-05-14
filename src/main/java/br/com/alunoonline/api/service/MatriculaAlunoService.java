@@ -19,13 +19,14 @@ import java.util.Optional;
 @Service
 public class MatriculaAlunoService {
     public static final double MEDIA_PARA_APROVACAO = 7.0;
+    public static final Integer QNT_NOTAS = 2;
 
     @Autowired
     MatriculaAlunoRepository matriculaAlunoRepository;
 
-    public void criarMatricula(MatriculaAluno matriculaAluno){
-        matriculaAluno.setStatus(MatriculoAlunoStatusEnum.MATRICULADO);
-        matriculaAlunoRepository.save(matriculaAluno);
+    public void criarMatricula(MatriculaAluno matriculaAlunoId){
+        matriculaAlunoId.setStatus(MatriculoAlunoStatusEnum.MATRICULADO);
+        matriculaAlunoRepository.save(matriculaAlunoId);
     }
 
     public void trancarMatricula(Long matriculaAlunoId){
@@ -39,22 +40,12 @@ public class MatriculaAlunoService {
             throw new ResponseStatusException((HttpStatus.BAD_REQUEST), "Só é possível trancar o curso com o status MATRICULADO");
 
         }
-
-
-
-
-//        if (!MatriculoAlunoStatusEnum.MATRICULADO.equals(matriculaAluno.getStatus())){
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-//                    "Só é possível trancar uma matricula com o status MATRICULADO");
-//        }
-
         matriculaAluno.setStatus(MatriculoAlunoStatusEnum.TRANCADO);
         matriculaAlunoRepository.save(matriculaAluno);
     }
 
-    public void atualizarNotas(AtualizarNotasRequestDTO request, Long idMatricula){
-        MatriculaAluno matriculaAluno = matriculaAlunoRepository.findById(idMatricula).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Matricula Aluno não encontrada!"));
+    public void atualizarNotas(AtualizarNotasRequestDTO request, Long matriculaAlunoId){
+        MatriculaAluno matriculaAluno = buscarMatriculaOuLancarExcecao(matriculaAlunoId);
 
         if (request.getNota1() != null) {
             matriculaAluno.setNota1(request.getNota1());
@@ -64,18 +55,27 @@ public class MatriculaAlunoService {
             matriculaAluno.setNota2(request.getNota2());
         }
 
-        calculaMedia(matriculaAluno);
+        calculaMediaEModificaStatus(matriculaAluno);
         matriculaAlunoRepository.save(matriculaAluno);
     }
 
-    private void calculaMedia(MatriculaAluno matriculaAluno) {
+    private MatriculaAluno buscarMatriculaOuLancarExcecao(Long matriculaAlunoId){
+        return matriculaAlunoRepository.findById(matriculaAlunoId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Matricula Aluno não encontrada!"));
+    }
+
+    private void calculaMediaEModificaStatus(MatriculaAluno matriculaAluno) {
         Double nota1 = matriculaAluno.getNota1();
         Double nota2 = matriculaAluno.getNota2();
 
         if (nota1 != null && nota2 != null) {
-            Double media = (nota1 + nota2) / 2;
-            matriculaAluno.setStatus(media >= MEDIA_PARA_APROVACAO ? MatriculoAlunoStatusEnum.APROVADO : MatriculoAlunoStatusEnum.REPROVADO);
-
+            Double media = (nota1 + nota2) / QNT_NOTAS;
+            matriculaAluno.setStatus(
+                            media >= MEDIA_PARA_APROVACAO ?
+                            MatriculoAlunoStatusEnum.APROVADO :
+                            MatriculoAlunoStatusEnum.REPROVADO);
         }
     }
 

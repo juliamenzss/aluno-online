@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface DisciplinaRepository extends JpaRepository<Disciplina, Long> {
-    //tipo de retorno da query
     List<Disciplina> findByProfessorId(Long professorId);
 }
