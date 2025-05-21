@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class MatriculaAlunoService {
@@ -24,19 +25,19 @@ public class MatriculaAlunoService {
     @Autowired
     MatriculaAlunoRepository matriculaAlunoRepository;
 
-    public void criarMatricula(MatriculaAluno matriculaAlunoId){
+    public void criarMatricula(MatriculaAluno matriculaAlunoId) {
         matriculaAlunoId.setStatus(MatriculoAlunoStatusEnum.MATRICULADO);
         matriculaAlunoRepository.save(matriculaAlunoId);
     }
 
-    public void trancarMatricula(Long matriculaAlunoId){
+    public void trancarMatricula(Long matriculaAlunoId) {
         MatriculaAluno matriculaAluno = matriculaAlunoRepository.findById(matriculaAlunoId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Matrícula não encontrada"));
 
 
-        if(matriculaAluno.getStatus().equals(MatriculoAlunoStatusEnum.MATRICULADO)){
+        if (matriculaAluno.getStatus().equals(MatriculoAlunoStatusEnum.MATRICULADO)) {
             matriculaAluno.setStatus((MatriculoAlunoStatusEnum.TRANCADO));
             matriculaAlunoRepository.saveAndFlush(matriculaAluno);
-        } else{
+        } else {
             throw new ResponseStatusException((HttpStatus.BAD_REQUEST), "Só é possível trancar o curso com o status MATRICULADO");
 
         }
@@ -44,7 +45,7 @@ public class MatriculaAlunoService {
         matriculaAlunoRepository.save(matriculaAluno);
     }
 
-    public void atualizarNotas(AtualizarNotasRequestDTO request, Long matriculaAlunoId){
+    public void atualizarNotas(Long matriculaAlunoId, AtualizarNotasRequestDTO request) {
         MatriculaAluno matriculaAluno = buscarMatriculaOuLancarExcecao(matriculaAlunoId);
 
         if (request.getNota1() != null) {
@@ -57,6 +58,23 @@ public class MatriculaAlunoService {
 
         calculaMediaEModificaStatus(matriculaAluno);
         matriculaAlunoRepository.save(matriculaAluno);
+    }
+
+    public HistoricoAlunoResponseDTO emitirHistorico(Long alunoId) {
+        List<MatriculaAluno> matriculaAlunos = matriculaAlunoRepository.findByAlunoIdAluno(alunoId);
+        if (matriculaAlunos.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Esse aluno não possui matriculas!");
+        }
+        HistoricoAlunoResponseDTO historicoAluno = new HistoricoAlunoResponseDTO();
+        historicoAluno.setNomeAluno(matriculaAlunos.get(0).getAluno().getNome());
+        historicoAluno.setEmailAluno(matriculaAlunos.get(0).getAluno().getEmail());
+        historicoAluno.setCpfAluno(matriculaAlunos.get(0).getAluno().getCpf());
+        List<DisciplinasAlunoResponseDTO> disciplinas = new ArrayList<>(matriculaAlunos
+                .stream()
+                .map(this::mapearParaDisciplinasAlunoResponseDTO)
+                .toList());
+        historicoAluno.setDisciplinasAlunoResponsesDTO(disciplinas);
+        return historicoAluno;
     }
 
     private MatriculaAluno buscarMatriculaOuLancarExcecao(Long matriculaAlunoId){
@@ -79,41 +97,18 @@ public class MatriculaAlunoService {
         }
     }
 
-    public HistoricoAlunoResponseDTO emitirHistorico(Long idAluno){
-        List<MatriculaAluno> matriculasDoAluno = matriculaAlunoRepository.findByAlunoIdAluno(idAluno);
+    private Double calcularMedia(Double nota1, Double nota2){
+        return (nota1 != null && nota2 != null) ? (nota1 + nota2) / QNT_NOTAS : null;
+    }
 
-        if (matriculasDoAluno.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Esse aluno não possui matriculas");
-        }
-
-        HistoricoAlunoResponseDTO historicoAluno = new HistoricoAlunoResponseDTO();
-        historicoAluno.setNomeAluno(matriculasDoAluno.get(0).getAluno().getNome());
-        historicoAluno.setCpfAluno(matriculasDoAluno.get(0).getAluno().getCpf());
-        historicoAluno.setEmailAluno(matriculasDoAluno.get(0).getAluno().getEmail());
-
-        List<DisciplinasAlunoResponseDTO> displinasList = new ArrayList<>();
-
-        for (MatriculaAluno matriculaAluno : matriculasDoAluno) {
-            DisciplinasAlunoResponseDTO disciplinasAlunoResponse = new DisciplinasAlunoResponseDTO();
-            disciplinasAlunoResponse.setNomeDisciplina(matriculaAluno.getDisciplina().getNome());
-            disciplinasAlunoResponse.setNomeProfessor(matriculaAluno.getDisciplina().getProfessor().getNome());
-            disciplinasAlunoResponse.setNota1(matriculaAluno.getNota1());
-            disciplinasAlunoResponse.setNota2(matriculaAluno.getNota2());
-
-            if (matriculaAluno.getNota1() != null && matriculaAluno.getNota2() != null) {
-                disciplinasAlunoResponse.setMedia((matriculaAluno.getNota1() + matriculaAluno.getNota2()) / 2.0);
-            } else {
-                disciplinasAlunoResponse.setMedia(null);
-            }
-
-            disciplinasAlunoResponse.setStatus(matriculaAluno.getStatus());
-
-            displinasList.add(disciplinasAlunoResponse);
-        }
-
-        historicoAluno.setDisciplinasAlunoResponsesDTO(displinasList);
-
-        return historicoAluno;
+    private DisciplinasAlunoResponseDTO mapearParaDisciplinasAlunoResponseDTO(MatriculaAluno matriculaAluno){
+        DisciplinasAlunoResponseDTO response = new DisciplinasAlunoResponseDTO();
+        response.setNomeDisciplina(matriculaAluno.getDisciplina().getNome());
+        response.setNomeProfessor(matriculaAluno.getDisciplina().getProfessor().getNome());
+        response.setNota1(matriculaAluno.getNota1());
+        response.setNota2(matriculaAluno.getNota2());
+        response.setMedia(calcularMedia(matriculaAluno.getNota1(),matriculaAluno.getNota2()));
+        response.setStatus(matriculaAluno.getStatus());
+        return response;
     }
 }
